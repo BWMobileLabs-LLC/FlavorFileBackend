@@ -1,0 +1,22 @@
+const pg = require('pg');
+
+const { Pool } = pg;
+
+const pool = new Pool({
+	host: process.env.PGHOST,
+	port: Number(process.env.PGPORT) || 5432,
+	user: process.env.PGUSER,
+	password: process.env.PGPASSWORD || undefined,
+	database: process.env.PGDATABASE,
+	max: 10,
+	connectionTimeoutMillis: 10000,
+	idleTimeoutMillis: 30000
+});
+
+const closeDb = async () => {
+	await pool.end();
+	console.log('Database connection pool closed.');
+};
+
+module.exports = pool;
+module.exports.closeDb = closeDb
