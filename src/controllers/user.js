@@ -29,3 +29,35 @@ module.exports.register = async (req, res) => {
 		res.status(500).json({ message: 'Failed to register user' });
 	}
 }
+
+module.exports.login = async (req, res) => {
+	const { username, password } = req.body;
+	try {
+		const user = await userRepository.findUserByUsername(username);
+		if (!user) {
+			return res.status(401).json({ message: 'Username or password is incorrect' });
+		}
+
+		const valid = await bcrypt.compare(password, user.password_hash);
+		if (!valid) {
+			return res.status(401).json({ message: 'Username or password is incorrect' });
+		}
+
+		const token = jwt.signSessionToken(user.id);
+		await userRepository.insertSession({
+			userId: user.id,
+			tokenHash: jwt.hashSessionToken(token),
+			expiresAt: jwt.getTokenExpiresAt(token),
+		});
+
+		res.status(200).json({
+			token,
+			user: {
+				id: user.id,
+				username: user.username,
+			},
+		});
+	} catch (err) {
+		res.status(500).json({ message: 'Failed to log in' });
+	}
+};
