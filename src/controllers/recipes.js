@@ -46,3 +46,22 @@ module.exports.updateRecipe = async (req, res) => {
 		res.status(500).json({ message: 'Failed to update recipe' });
 	}
 };
+
+module.exports.deleteRecipe = async (req, res) => {
+	const { id } = req.params;
+	try {
+		const rows = await recipeRepository.checkOwnership({ id });
+		const recipe = rows[0];
+		if (!recipe) {
+			return res.status(404).json({ message: 'Recipe not found' });
+		}
+		if (recipe.user_id !== req.userId) {
+			return res.status(403).json({ message: 'Unauthorized' });
+		}
+
+		await recipeRepository.deleteRecipe({ id });
+		return res.sendStatus(204);
+	} catch (err) {
+		return res.status(500).json({ message: 'Failed to delete recipe' });
+	}
+}

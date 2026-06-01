@@ -165,3 +165,18 @@ module.exports.updateRecipe = async ({
 		client.release();
 	}
 };
+
+module.exports.checkOwnership = async ({ id }) => {
+	const { rows } = await db.query(
+		`SELECT * FROM recipes WHERE id = $1`,
+		[id]
+	);
+	return rows;
+}
+
+module.exports.deleteRecipe = async ({ id }) => {
+	await db.query(
+		`DELETE FROM recipes WHERE id = $1`,
+		[id]
+	)
+};
