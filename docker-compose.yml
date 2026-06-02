@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - stack.env
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - stack.env
+    environment:
+      PGHOST: db
+      PORT: 3000
+    ports:
+      # Host port comes from stack.env PORT; app always listens on 3000 in-container.
+      - '127.0.0.1:${PORT:-3000}:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
