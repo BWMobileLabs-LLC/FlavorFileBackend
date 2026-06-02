@@ -61,3 +61,14 @@ module.exports.login = async (req, res) => {
 		res.status(500).json({ message: 'Failed to log in' });
 	}
 };
+
+module.exports.logout = async (req, res) => {
+	const userId = req.userId;
+	try {
+		await userRepository.deleteUserSessions(userId);
+		return res.sendStatus(204);
+	} catch (err) {
+		console.log(err);
+		return res.sendStatus(204);
+	}
+}

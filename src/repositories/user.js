@@ -61,3 +61,10 @@ module.exports.findUserByUsername = async (username) => {
 	);
 	return rows[0];
 };
+
+module.exports.deleteUserSessions = async (userId) => {
+	await db.query(
+		`DELETE FROM sessions WHERE user_id = $1`,
+		[userId]
+	);
+}
