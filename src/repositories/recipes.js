@@ -166,6 +166,76 @@ module.exports.updateRecipe = async ({
 	}
 };
 
+module.exports.getRecipesForUser = async ({ id }) => {
+	const { rows: recipes } = await db.query(
+		`
+		SELECT id, title, image_data, cooking_time, servings, is_favorite
+		FROM recipes
+		WHERE user_id = $1
+		`,
+		[id]
+	);
+
+	if (recipes.length === 0) {
+		return [];
+	}
+
+	const recipeIds = recipes.map((recipe) => recipe.id);
+
+	const { rows: steps } = await db.query(
+		`
+		SELECT recipe_id, text, step_order
+		FROM recipe_steps
+		WHERE recipe_id = ANY($1::uuid[])
+		ORDER BY step_order
+		`,
+		[recipeIds]
+	);
+
+	const { rows: ingredients } = await db.query(
+		`
+		SELECT recipe_id, text, ingredient_order
+		FROM recipe_ingredients
+		WHERE recipe_id = ANY($1::uuid[])
+		ORDER BY ingredient_order
+		`,
+		[recipeIds]
+	);
+
+	const stepsByRecipeId = new Map();
+	for (const step of steps) {
+		if (!stepsByRecipeId.has(step.recipe_id)) {
+			stepsByRecipeId.set(step.recipe_id, []);
+		}
+		stepsByRecipeId.get(step.recipe_id).push({
+			text: step.text,
+			step_order: step.step_order,
+		});
+	}
+
+	const ingredientsByRecipeId = new Map();
+	for (const ingredient of ingredients) {
+		if (!ingredientsByRecipeId.has(ingredient.recipe_id)) {
+			ingredientsByRecipeId.set(ingredient.recipe_id, []);
+		}
+		ingredientsByRecipeId.get(ingredient.recipe_id).push({
+			text: ingredient.text,
+			ingredient_order: ingredient.ingredient_order,
+		});
+	}
+
+	return recipes.map((recipe) => ({
+		id: recipe.id,
+		title: recipe.title,
+		image_data: recipe.image_data,
+		cooking_time: recipe.cooking_time,
+		servings: recipe.servings,
+		is_favorite: recipe.is_favorite,
+		steps: stepsByRecipeId.get(recipe.id) ?? [],
+		ingredients: ingredientsByRecipeId.get(recipe.id) ?? [],
+	}));
+};
+
 module.exports.checkOwnership = async ({ id }) => {
 	const { rows } = await db.query(
 		`SELECT * FROM recipes WHERE id = $1`,

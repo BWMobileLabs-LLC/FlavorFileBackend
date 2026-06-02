@@ -47,6 +47,16 @@ module.exports.updateRecipe = async (req, res) => {
 	}
 };
 
+module.exports.getRecipes = async (req, res) => {
+	const id = req.userId;
+	try {
+		const rows = await recipeRepository.getRecipesForUser({ id });
+		return res.status(200).json({ recipes: rows });
+	} catch (err) {
+		return res.status(500).json({ message: 'Failed to fetch recipes' });
+	}
+}
+
 module.exports.deleteRecipe = async (req, res) => {
 	const { id } = req.params;
 	try {
