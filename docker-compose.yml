@@ -1,9 +1,9 @@
+name: flavorfile
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file:
-      - stack.env
     environment:
       POSTGRES_USER: ${PGUSER}
       POSTGRES_PASSWORD: ${PGPASSWORD}
@@ -11,22 +11,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      # Vars are substituted at deploy time — avoids Portainer/shell $ escaping issues.
+      test: ['CMD', 'pg_isready', '-U', '${PGUSER}', '-d', '${PGDATABASE}']
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 10s
+      retries: 15
+      start_period: 40s
 
   app:
     build: .
     restart: unless-stopped
-    env_file:
-      - stack.env
     environment:
       PGHOST: db
+      PGPORT: ${PGPORT:-5432}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: 3000
     ports:
-      # Host port comes from stack.env PORT; app always listens on 3000 in-container.
       - '127.0.0.1:${PORT:-3000}:3000'
     depends_on:
       db:
